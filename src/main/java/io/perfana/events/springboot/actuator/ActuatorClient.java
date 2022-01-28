@@ -23,6 +23,8 @@ import com.squareup.okhttp.Response;
 import io.perfana.eventscheduler.api.EventLogger;
 
 import java.io.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -37,6 +39,8 @@ public class ActuatorClient {
     private final OkHttpClient okHttpClient = new OkHttpClient();
 
     private final EventLogger logger;
+
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssSSS");
 
     public ActuatorClient(String actuatorUrl, EventLogger logger) {
         this.baseUrl = actuatorUrl;
@@ -103,18 +107,22 @@ public class ActuatorClient {
     }
     }
 
-    public void heapdump(String filename) {
+    public void heapdump(File path, String fileId) {
         // http://localhost:8080/actuator/heapdump
         String totalUrl = baseUrl + "/heapdump";
-        File file = new File("/tmp/heapdump-" + filename + "-" + System.currentTimeMillis() + ".bin");
+        File file = new File(path, "heapdump-" + fileId + "-" + fileTimeStamp() + ".bin");
         downloadAndSave(file, totalUrl);
         logger.info("wrote heap dump to " + file);
     }
 
-    public void threaddump(String filename) {
+    private String fileTimeStamp() {
+        return DATE_TIME_FORMATTER.format(LocalDateTime.now());
+    }
+
+    public void threaddump(File path, String filename) {
         // http://localhost:8080/actuator/threaddump
         String totalUrl = baseUrl + "/threaddump";
-        File file = new File("/tmp/threaddump-" + filename + "-" + System.currentTimeMillis() + ".txt");
+        File file = new File(path, "threaddump-" + filename + "-" + fileTimeStamp() + ".txt");
         Map<String, String> headers = new HashMap<>();
         headers.put("Accept", "text/plain");
         downloadAndSave(file, totalUrl, headers);

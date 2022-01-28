@@ -56,6 +56,7 @@ public class SpringBootEventTest {
         eventConfig.setEnabled(true);
         eventConfig.setTestConfig(TestConfig.builder().build());
         eventConfig.setActuatorBaseUrl("http://localhost:8080/actuator");
+        eventConfig.setDumpPath("/not-existing/path");
 
         EventMessageBus messageBus = new EventMessageBusSimple();
 
@@ -63,8 +64,8 @@ public class SpringBootEventTest {
         event.beforeTest();
         event.keepAlive();
         event.customEvent(CustomEvent.createFromLine("PT3S|heapdump|debug=true"));
-        event.customEvent(CustomEvent.createFromLine("PT1M|stackdump"));
-        event.customEvent(CustomEvent.createFromLine("PT1H2M3S|heapdump|"));
+        event.customEvent(CustomEvent.createFromLine("PT1M|threaddump"));
+        event.customEvent(CustomEvent.createFromLine("PT1H2M3S|threaddump|"));
         event.afterTest();
 
         // not much to assert really... just look at System.out and

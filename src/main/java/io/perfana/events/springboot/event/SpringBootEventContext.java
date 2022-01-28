@@ -18,7 +18,6 @@ package io.perfana.events.springboot.event;
 import io.perfana.eventscheduler.api.config.EventContext;
 import net.jcip.annotations.Immutable;
 
-import java.time.Duration;
 import java.util.List;
 
 @Immutable
@@ -27,14 +26,18 @@ public class SpringBootEventContext extends EventContext {
     private final String myEventTags;
     private final String actuatorPropPrefix;
     private final String actuatorBaseUrl;
+
+    private final String dumpPath;
+
     private final List<String> actuatorEnvProps;
 
-    protected SpringBootEventContext(EventContext context, String myEventTags, String actuatorPropPrefix, String actuatorBaseUrl, List<String> actuatorEnvProps) {
+    protected SpringBootEventContext(EventContext context, String myEventTags, String actuatorPropPrefix, String actuatorBaseUrl, List<String> actuatorEnvProps, String dumpPath) {
         super(context, SpringBootEventFactory.class.getName(), true);
         this.myEventTags = myEventTags;
         this.actuatorPropPrefix = actuatorPropPrefix;
         this.actuatorBaseUrl = actuatorBaseUrl;
         this.actuatorEnvProps = actuatorEnvProps;
+        this.dumpPath = dumpPath;
     }
 
     public String getMyEventTags() {
@@ -44,12 +47,17 @@ public class SpringBootEventContext extends EventContext {
     public String getActuatorBaseUrl() {
         return actuatorBaseUrl;
     }
+
     public String getActuatorPropPrefix() {
         return actuatorPropPrefix;
     }
 
     public List<String> getActuatorEnvProperties() {
         return actuatorEnvProps;
+    }
+
+    public String getDumpPath() {
+        return dumpPath;
     }
 
     @Override
@@ -59,6 +67,7 @@ public class SpringBootEventContext extends EventContext {
             ", actuatorPropPrefix='" + actuatorPropPrefix + '\'' +
             ", actuatorBaseUrl='" + actuatorBaseUrl + '\'' +
             ", actuatorEnvProperties='" + actuatorEnvProps + '\'' +
+            ", dumpPath='" + dumpPath + '\'' +
             "} " + super.toString();
     }
 }

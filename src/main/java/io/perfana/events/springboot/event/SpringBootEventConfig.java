@@ -30,6 +30,7 @@ public class SpringBootEventConfig extends EventConfig {
     private String actuatorPropPrefix = "actuator";
     private String actuatorBaseUrl;
     private String actuatorEnvProperties;
+    private String dumpPath;
 
     public void setMyEventTags(String myEventTags) {
         this.myEventTags = myEventTags;
@@ -42,13 +43,13 @@ public class SpringBootEventConfig extends EventConfig {
     @Override
     public SpringBootEventContext toContext() {
         List<String> envProps = createEnvProps();
-        return new SpringBootEventContext(super.toContext(), myEventTags, actuatorPropPrefix, actuatorBaseUrl, envProps);
+        return new SpringBootEventContext(super.toContext(), myEventTags, actuatorPropPrefix, actuatorBaseUrl, envProps, dumpPath);
     }
 
     @Override
     public SpringBootEventContext toContext(TestContext override) {
         List<String> envProps = createEnvProps();
-        return new SpringBootEventContext(super.toContext(override), myEventTags, actuatorPropPrefix, actuatorBaseUrl, envProps);
+        return new SpringBootEventContext(super.toContext(override), myEventTags, actuatorPropPrefix, actuatorBaseUrl, envProps, dumpPath);
     }
 
     @Override
@@ -58,6 +59,7 @@ public class SpringBootEventConfig extends EventConfig {
             ", actuatorPropPrefix='" + actuatorPropPrefix + '\'' +
             ", actuatorBaseUrl='" + actuatorBaseUrl + '\'' +
             ", actuatorEnvProperties='" + actuatorEnvProperties + '\'' +
+            ", dumpPath='" + dumpPath + '\'' +
             "} " + super.toString();
     }
 
@@ -83,5 +85,13 @@ public class SpringBootEventConfig extends EventConfig {
 
     public void setActuatorPropPrefix(String actuatorPropPrefix) {
         this.actuatorPropPrefix = actuatorPropPrefix;
+    }
+
+    public String getDumpPath() {
+        return dumpPath;
+    }
+
+    public void setDumpPath(String dumpPath) {
+        this.dumpPath = dumpPath;
     }
 }

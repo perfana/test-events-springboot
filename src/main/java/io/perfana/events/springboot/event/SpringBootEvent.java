@@ -25,6 +25,7 @@ import io.perfana.eventscheduler.api.EventLogger;
 import io.perfana.eventscheduler.api.message.EventMessage;
 import io.perfana.eventscheduler.api.message.EventMessageBus;
 
+import java.io.File;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -39,7 +40,7 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
     private final Gson gson = new Gson();
 
     enum AllowedCustomEvents {
-        heapdump("heapdump"), stackdump("stackdump");
+        heapdump("heapdump"), threaddump("threaddump");
 
         private final String eventName;
 
@@ -117,32 +118,59 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
 
     @Override
     public void customEvent(CustomEvent scheduleEvent) {
-
         String eventName = scheduleEvent.getName();
-        
-        if (stackdump.hasEventName(eventName)) {
-            stackdump(scheduleEvent);
-        }
-        else if (heapdump.hasEventName(eventName)) {
-            heapdumpEvent(scheduleEvent);
-        }
-        else {
-            logger.info("WARNING: ignoring unknown event [" + eventName + "]");
+        try {
+            if (threaddump.hasEventName(eventName)) {
+                threadDumpEvent(scheduleEvent);
+            } else if (heapdump.hasEventName(eventName)) {
+                heapDumpEvent(scheduleEvent);
+            } else {
+                logger.warn("ignoring unknown event [" + eventName + "]");
+            }
+        } catch (Exception e) {
+            logger.error("Failed to run custom event: " + eventName, e);
         }
     }
 
-    private void heapdumpEvent(CustomEvent scheduleEvent) {
+    private void heapDumpEvent(CustomEvent scheduleEvent) {
         logger.info("Start " + scheduleEvent);
+        File dumpPath = sanityPath(eventContext.getDumpPath());
         String testRunId = eventContext.getTestContext().getTestRunId();
         logger.info("Heap dump for " + testRunId);
-        actuatorClient.heapdump(testRunId);
+        actuatorClient.heapdump(dumpPath, testRunId);
     }
 
-    private void stackdump(CustomEvent scheduleEvent) {
-        Map<String, String> parsedSettings = parseSettings(scheduleEvent.getSettings());
+    private void threadDumpEvent(CustomEvent scheduleEvent) {
+        logger.info("Start " + scheduleEvent);
+        File dumpPath = sanityPath(eventContext.getDumpPath());
         String testRunId = eventContext.getTestContext().getTestRunId();
-        logger.info("stack dump event for test [" + testRunId + "] with parsed settings: " + parsedSettings);
-        actuatorClient.threaddump(testRunId);
+        logger.info("stack dump event for test [" + testRunId + "]");
+        actuatorClient.threaddump(dumpPath, testRunId);
+    }
+
+    private File sanityPath(String dumpPath) {
+        File dumpDir;
+        if (dumpPath == null || dumpPath.trim().isEmpty()) {
+            String tmpDir = System.getProperty("java.io.tmpdir");
+            if (tmpDir == null || tmpDir.trim().isEmpty()) {
+                throw new RuntimeException("No java.io.tmpdir env found, better define explicit dumpPath in config.");
+            }
+            dumpDir = new File(tmpDir);
+        }
+        else {
+            dumpDir = new File(dumpPath);
+        }
+
+        if (!dumpDir.exists()) {
+            throw new RuntimeException("Dir does not exist: " + dumpDir);
+        }
+        if (!dumpDir.isDirectory()) {
+            throw new RuntimeException("Dir is not a directory: " + dumpDir);
+        }
+        if (!dumpDir.canWrite()) {
+            throw new RuntimeException("Dir is not writeable: " + dumpDir);
+        }
+        return dumpDir;
     }
 
     static Map<String, String> parseSettings(String eventSettings) {
