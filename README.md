@@ -1,6 +1,35 @@
 # test-events-springboot
 Fire test events for Spring Boot. Talks to actuator metrics and actions.
 
+## Actuator client
+
+There is an
+actuator client that calls an actuator/env endpoint and turns properties
+into variables in an event-scheduler message. The variables in a message
+are picked up by the perfana-java-client and are sent to Perfana for the
+current test run.
+
+* `actuatorPropPrefix` prefix for the properties to send as variables
+* `actuatorBaseUrl` the base url for the actuator endpoint, `/env` will be added
+* `actuatorEnvProperties` comma seperated list of actuator env properties to turn into variables
+
+Tip: check your http://application/actuator/env to see what is available.
+
+Note: env needs to be enabled in actuator. Be careful though to not expose this endpoint on the internet!
+
+```xml
+<eventConfig implementation="io.perfana.events.springboot.event.SpringBootEventConfig">
+    <name>ActuatorEvent</name>
+    <helloInitialSleepSeconds>0</helloInitialSleepSeconds>
+    <actuatorPropPrefix>my-app</actuatorPropPrefix>
+    <actuatorBaseUrl>http://my-app:8080/actuator</actuatorBaseUrl>
+    <actuatorEnvProperties>java.runtime.version,JDK_JAVA_OPTIONS</actuatorEnvProperties>
+</eventConfig>
+
+```
+
+## Events
+
 This events plugin reacts to the following custom events:
 * `heapdump` - calls actuator heap dump endpoint and saves it to `dumpPath` (defaults to `java.io.tmpdir`)
 * `threaddump` - calls actuator thread dump endpoint and saves it to `dumpPath` (defaults to `java.io.tmpdir`)
@@ -13,7 +42,9 @@ In the test start event, it collects settings from actuator env endpoint, and br
 other plugins. For instance, if you use the Perfana Java client plugin as well, this information
 is automatically send to Perfana. The values are then stored with the current test run.
 
-## use
+## Example config
+
+Use one of the Perfana maven plugins (`event-scheduler-maven-plugin`, `events-gatling-maven-plugin`, `events-jmeter-maven-plugin`, ...) and hook-up this `test-events-springboot` via a sub-dependency:
 
 ```xml
 <plugins>
@@ -80,5 +111,7 @@ is automatically send to Perfana. The values are then stored with the current te
 
 See also:
 * https://github.com/perfana/event-scheduler-maven-plugin
+* https://github.com/perfana/events-jmeter-maven-plugin
+* https://github.com/perfana/events-gatling-maven-plugin
 * https://github.com/perfana/event-scheduler
 * https://github.com/perfana/perfana-java-client
