@@ -20,23 +20,25 @@ import io.perfana.eventscheduler.api.CustomEvent;
 import io.perfana.eventscheduler.api.config.TestConfig;
 import io.perfana.eventscheduler.api.message.EventMessageBus;
 import io.perfana.eventscheduler.log.EventLoggerStdOut;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SpringBootEventTest {
+class SpringBootEventTest {
 
     @Test
-    public void beforeTest() {
+    @Disabled("only run with actual actuator running on http://localhost:8080/actuator")
+    void beforeTest() {
         SpringBootEventConfig eventConfig = new SpringBootEventConfig();
         eventConfig.setEventFactory(SpringBootEventFactory.class.getSimpleName());
         eventConfig.setName("myEvent1");
         eventConfig.setEnabled(true);
         eventConfig.setTestConfig(TestConfig.builder().build());
         eventConfig.setActuatorBaseUrl("http://localhost:8080/actuator");
-        eventConfig.setDumpPath("/not-existing/path");
+        eventConfig.setDumpPath("/tmp");
 
         EventMessageBus messageBus = new EventMessageBusSimple();
 
@@ -54,20 +56,20 @@ public class SpringBootEventTest {
     }
 
     @Test
-    public void parseSettingsZero() {
+    void parseSettingsZero() {
         Map<String, String> emptyMap = SpringBootEvent.parseSettings("");
         assertEquals(0, emptyMap.size());
     }
 
     @Test
-    public void parseSettingsOne() {
+    void parseSettingsOne() {
         Map<String, String> emptyMap = SpringBootEvent.parseSettings("foo=bar");
         assertEquals(1, emptyMap.size());
         assertEquals("bar", emptyMap.get("foo"));
     }
 
     @Test
-    public void parseSettingsTwo() {
+    void parseSettingsTwo() {
         Map<String, String> emptyMap = SpringBootEvent.parseSettings("foo=bar;name=perfana");
         assertEquals(2, emptyMap.size());
         assertEquals("bar", emptyMap.get("foo"));
@@ -75,7 +77,7 @@ public class SpringBootEventTest {
     }
 
     @Test
-    public void parseSettingsNoValue() {
+    void parseSettingsNoValue() {
         Map<String, String> emptyMap = SpringBootEvent.parseSettings("foo=bar;name");
         assertEquals(2,emptyMap.size());
         assertEquals("bar", emptyMap.get("foo"));
@@ -83,7 +85,7 @@ public class SpringBootEventTest {
     }
 
     @Test
-    public void parseSettingsNoEntry() {
+    void parseSettingsNoEntry() {
         Map<String, String> emptyMap = SpringBootEvent.parseSettings("foo=bar;");
         assertEquals(1,emptyMap.size());
         assertEquals("bar", emptyMap.get("foo"));

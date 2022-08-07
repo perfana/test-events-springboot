@@ -110,7 +110,7 @@ public class ActuatorClient {
     public void heapdump(File path, String fileId) {
         // http://localhost:8080/actuator/heapdump
         String totalUrl = baseUrl + "/heapdump";
-        File file = new File(path, "heapdump-" + fileId + "-" + fileTimeStamp() + ".bin");
+        File file = new File(path, "heapdump-" + fileId + "-" + fileTimeStamp() + ".hprof");
         downloadAndSave(file, totalUrl);
         logger.info("wrote heap dump to " + file);
     }
@@ -143,7 +143,7 @@ public class ActuatorClient {
                 downloader.download(url, headers);
             }
         } catch (IOException e) {
-            logger.error("Create heapdump and save heapdump failed.", e);
+            logger.error("Create heap dump and save heap dump failed.", e);
         }
     }
 

@@ -24,6 +24,7 @@ import io.perfana.eventscheduler.api.EventAdapter;
 import io.perfana.eventscheduler.api.EventLogger;
 import io.perfana.eventscheduler.api.message.EventMessage;
 import io.perfana.eventscheduler.api.message.EventMessageBus;
+import io.perfana.eventscheduler.exception.EventSchedulerRuntimeException;
 
 import java.io.File;
 import java.lang.reflect.Type;
@@ -105,15 +106,23 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
             }
         }
 
-        EventMessage.EventMessageBuilder builder = EventMessage.builder();
-
         String actuatorPropPrefix = eventContext.getActuatorPropPrefix();
-
-        variables.forEach(v -> builder.variable(actuatorPropPrefix + "-" + v.getName(), v.getValue()));
-
-        this.eventMessageBus.send(builder.pluginName(pluginName).build());
+        variables.forEach(v -> sendKeyValueMessage(actuatorPropPrefix + "-" + v.getName(), v.getValue(), pluginName));
 
         this.eventMessageBus.send(EventMessage.builder().pluginName(pluginName).message("Go!").build());
+    }
+
+    private void sendKeyValueMessage(String key, String value, String pluginName) {
+
+        EventMessage.EventMessageBuilder messageBuilder = EventMessage.builder();
+
+        messageBuilder.variable("message-type", "test-run-config");
+        messageBuilder.variable("output", "key");
+
+        messageBuilder.variable("key", key);
+        messageBuilder.message(value);
+
+        this.eventMessageBus.send(messageBuilder.pluginName(pluginName).build());
     }
 
     @Override
@@ -153,7 +162,7 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
         if (dumpPath == null || dumpPath.trim().isEmpty()) {
             String tmpDir = System.getProperty("java.io.tmpdir");
             if (tmpDir == null || tmpDir.trim().isEmpty()) {
-                throw new RuntimeException("No java.io.tmpdir env found, better define explicit dumpPath in config.");
+                throw new EventSchedulerRuntimeException("No java.io.tmpdir env found, better define explicit dumpPath in config.");
             }
             dumpDir = new File(tmpDir);
         }
@@ -162,13 +171,13 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
         }
 
         if (!dumpDir.exists()) {
-            throw new RuntimeException("Dir does not exist: " + dumpDir);
+            throw new EventSchedulerRuntimeException("Dir does not exist: " + dumpDir);
         }
         if (!dumpDir.isDirectory()) {
-            throw new RuntimeException("Dir is not a directory: " + dumpDir);
+            throw new EventSchedulerRuntimeException("Dir is not a directory: " + dumpDir);
         }
         if (!dumpDir.canWrite()) {
-            throw new RuntimeException("Dir is not writeable: " + dumpDir);
+            throw new EventSchedulerRuntimeException("Dir is not writeable: " + dumpDir);
         }
         return dumpDir;
     }
