@@ -107,18 +107,21 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
         }
 
         String actuatorPropPrefix = eventContext.getActuatorPropPrefix();
-        variables.forEach(v -> sendKeyValueMessage(actuatorPropPrefix + "-" + v.getName(), v.getValue(), pluginName));
+        variables.forEach(v -> sendKeyValueMessage(actuatorPropPrefix + "-" + v.getName(), v.getValue(), pluginName, actuatorPropPrefix));
 
         this.eventMessageBus.send(EventMessage.builder().pluginName(pluginName).message("Go!").build());
     }
 
-    private void sendKeyValueMessage(String key, String value, String pluginName) {
+    private void sendKeyValueMessage(String key, String value, String pluginName, String actuatorPropPrefix) {
 
         EventMessage.EventMessageBuilder messageBuilder = EventMessage.builder();
 
         messageBuilder.variable("message-type", "test-run-config");
         messageBuilder.variable("output", "key");
-        messageBuilder.variable("tags", "actuator");
+
+        boolean isPrefixAvailable = actuatorPropPrefix != null && !actuatorPropPrefix.isEmpty();
+        String tags = isPrefixAvailable ? actuatorPropPrefix + "," + "actuator" : "actuator";
+        messageBuilder.variable("tags", tags);
 
         messageBuilder.variable("key", key);
         messageBuilder.message(value);
