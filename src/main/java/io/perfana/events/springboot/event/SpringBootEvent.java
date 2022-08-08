@@ -118,6 +118,7 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
 
         messageBuilder.variable("message-type", "test-run-config");
         messageBuilder.variable("output", "key");
+        messageBuilder.variable("tags", "actuator");
 
         messageBuilder.variable("key", key);
         messageBuilder.message(value);
