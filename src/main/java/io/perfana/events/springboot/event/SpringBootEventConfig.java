@@ -26,14 +26,14 @@ import java.util.List;
 @NotThreadSafe
 public class SpringBootEventConfig extends EventConfig {
 
-    private String myEventTags;
+    private String tags;
     private String actuatorPropPrefix = "actuator";
     private String actuatorBaseUrl;
     private String actuatorEnvProperties;
     private String dumpPath;
 
-    public void setMyEventTags(String myEventTags) {
-        this.myEventTags = myEventTags;
+    public void setTags(String tags) {
+        this.tags = tags;
     }
 
     private List<String> createEnvProps() {
@@ -43,20 +43,20 @@ public class SpringBootEventConfig extends EventConfig {
     @Override
     public SpringBootEventContext toContext() {
         List<String> envProps = createEnvProps();
-        return new SpringBootEventContext(super.toContext(), myEventTags, actuatorPropPrefix, actuatorBaseUrl, envProps, dumpPath);
+        return new SpringBootEventContext(super.toContext(), tags, actuatorPropPrefix, actuatorBaseUrl, envProps, dumpPath);
     }
 
     @Override
     public SpringBootEventContext toContext(TestContext override) {
         List<String> envProps = createEnvProps();
-        return new SpringBootEventContext(super.toContext(override), myEventTags, actuatorPropPrefix, actuatorBaseUrl, envProps, dumpPath);
+        return new SpringBootEventContext(super.toContext(override), tags, actuatorPropPrefix, actuatorBaseUrl, envProps, dumpPath);
     }
 
     @Override
     public String toString() {
         return "SpringBootEventConfig{" +
-            "myEventTags='" + myEventTags + '\'' +
-            ", actuatorPropPrefix='" + actuatorPropPrefix + '\'' +
+            "tags='" + tags + '\'' +
+            ", actuatorPropPrefix(Deprecated)='" + actuatorPropPrefix + '\'' +
             ", actuatorBaseUrl='" + actuatorBaseUrl + '\'' +
             ", actuatorEnvProperties='" + actuatorEnvProperties + '\'' +
             ", dumpPath='" + dumpPath + '\'' +
@@ -79,10 +79,19 @@ public class SpringBootEventConfig extends EventConfig {
         this.actuatorEnvProperties = actuatorEnvProperties;
     }
 
+
+    /**
+     * @deprecated: use tags instead
+     */
+    @Deprecated
     public String getActuatorPropPrefix() {
         return actuatorPropPrefix;
     }
 
+    /**
+     * @deprecated: use tags instead
+     */
+    @Deprecated
     public void setActuatorPropPrefix(String actuatorPropPrefix) {
         this.actuatorPropPrefix = actuatorPropPrefix;
     }

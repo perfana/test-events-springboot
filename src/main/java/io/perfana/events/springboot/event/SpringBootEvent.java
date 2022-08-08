@@ -36,6 +36,7 @@ import static io.perfana.events.springboot.event.SpringBootEvent.AllowedCustomEv
 
 public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
 
+    public static final String ACTUATOR_TAG = "actuator";
     private ActuatorClient actuatorClient;
 
     private final Gson gson = new Gson();
@@ -106,21 +107,40 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
             }
         }
 
-        String actuatorPropPrefix = eventContext.getActuatorPropPrefix();
-        variables.forEach(v -> sendKeyValueMessage(actuatorPropPrefix + "-" + v.getName(), v.getValue(), pluginName, actuatorPropPrefix));
+        String tags = filterAndCombineTagsForTestRunConfigCall();
+        variables.forEach(v -> sendKeyValueMessage(v.getName(), v.getValue(), pluginName, tags));
 
         this.eventMessageBus.send(EventMessage.builder().pluginName(pluginName).message("Go!").build());
     }
 
-    private void sendKeyValueMessage(String key, String value, String pluginName, String actuatorPropPrefix) {
+    /**
+     * Gets tags from event context and adds "actuator" tag if not present,
+     * and adds actuatorPropPrefix if not part of tags.
+     *
+     * @return comma separated list of tags
+     */
+    private String filterAndCombineTagsForTestRunConfigCall() {
+        String actuatorPropPrefix = eventContext.getActuatorPropPrefix();
+        String tags = eventContext.getTags();
+
+        List<String> tagsAsList = new ArrayList<>(Arrays.asList(tags.split(",")));
+        // this can go as actuatorPropPrefix is removed!
+        if (!tagsAsList.contains(actuatorPropPrefix)) {
+            tagsAsList.add(actuatorPropPrefix);
+        }
+        if (!tagsAsList.contains(ACTUATOR_TAG)) {
+            tagsAsList.add(ACTUATOR_TAG);
+        }
+
+        return String.join(",", tagsAsList);
+    }
+
+    private void sendKeyValueMessage(String key, String value, String pluginName, String tags) {
 
         EventMessage.EventMessageBuilder messageBuilder = EventMessage.builder();
 
         messageBuilder.variable("message-type", "test-run-config");
         messageBuilder.variable("output", "key");
-
-        boolean isPrefixAvailable = actuatorPropPrefix != null && !actuatorPropPrefix.isEmpty();
-        String tags = isPrefixAvailable ? actuatorPropPrefix + "," + "actuator" : "actuator";
         messageBuilder.variable("tags", tags);
 
         messageBuilder.variable("key", key);
@@ -148,17 +168,32 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
     private void heapDumpEvent(CustomEvent scheduleEvent) {
         logger.info("Start " + scheduleEvent);
         File dumpPath = sanityPath(eventContext.getDumpPath());
+        String filename = uniqueFileNameFromTags();
+        logger.info("Heap dump for " + filename);
+        actuatorClient.heapdump(dumpPath, filename);
+    }
+
+    private String uniqueFileNameFromTags() {
         String testRunId = eventContext.getTestContext().getTestRunId();
-        logger.info("Heap dump for " + testRunId);
-        actuatorClient.heapdump(dumpPath, testRunId);
+        String tags = eventContext.getTags();
+        if (tags.isEmpty()) {
+            return testRunId;
+        } else {
+            String tagsForName = tags.replace(',', '-');
+            return sanitizeFilename(testRunId + "-" + tagsForName);
+        }
+    }
+
+    private String sanitizeFilename(String filename) {
+        return filename.replaceAll("[:\\\\/*?|<>]", "_");
     }
 
     private void threadDumpEvent(CustomEvent scheduleEvent) {
         logger.info("Start " + scheduleEvent);
         File dumpPath = sanityPath(eventContext.getDumpPath());
-        String testRunId = eventContext.getTestContext().getTestRunId();
-        logger.info("stack dump event for test [" + testRunId + "]");
-        actuatorClient.threaddump(dumpPath, testRunId);
+        String filename = uniqueFileNameFromTags();
+        logger.info("stack dump event for test [" + filename + "]");
+        actuatorClient.threaddump(dumpPath, filename);
     }
 
     private File sanityPath(String dumpPath) {

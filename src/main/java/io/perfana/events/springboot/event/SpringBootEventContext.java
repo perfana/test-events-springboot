@@ -23,7 +23,7 @@ import java.util.List;
 @Immutable
 public class SpringBootEventContext extends EventContext {
 
-    private final String myEventTags;
+    private final String tags;
     private final String actuatorPropPrefix;
     private final String actuatorBaseUrl;
 
@@ -31,23 +31,27 @@ public class SpringBootEventContext extends EventContext {
 
     private final List<String> actuatorEnvProps;
 
-    protected SpringBootEventContext(EventContext context, String myEventTags, String actuatorPropPrefix, String actuatorBaseUrl, List<String> actuatorEnvProps, String dumpPath) {
+    protected SpringBootEventContext(EventContext context, String tags, String actuatorPropPrefix, String actuatorBaseUrl, List<String> actuatorEnvProps, String dumpPath) {
         super(context, SpringBootEventFactory.class.getName(), true);
-        this.myEventTags = myEventTags;
+        this.tags = tags;
         this.actuatorPropPrefix = actuatorPropPrefix;
         this.actuatorBaseUrl = actuatorBaseUrl;
         this.actuatorEnvProps = actuatorEnvProps;
         this.dumpPath = dumpPath;
     }
 
-    public String getMyEventTags() {
-        return myEventTags;
+    public String getTags() {
+        return tags;
     }
 
     public String getActuatorBaseUrl() {
         return actuatorBaseUrl;
     }
 
+    /**
+     * @deprecated: use tags instead
+     */
+    @Deprecated
     public String getActuatorPropPrefix() {
         return actuatorPropPrefix;
     }
@@ -63,8 +67,8 @@ public class SpringBootEventContext extends EventContext {
     @Override
     public String toString() {
         return "SpringBootEventConfig{" +
-            ", myEventTags='" + myEventTags + '\'' +
-            ", actuatorPropPrefix='" + actuatorPropPrefix + '\'' +
+            ", tags='" + tags + '\'' +
+            ", actuatorPropPrefix(Deprecated)='" + actuatorPropPrefix + '\'' +
             ", actuatorBaseUrl='" + actuatorBaseUrl + '\'' +
             ", actuatorEnvProperties='" + actuatorEnvProps + '\'' +
             ", dumpPath='" + dumpPath + '\'' +

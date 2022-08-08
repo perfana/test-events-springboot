@@ -39,6 +39,7 @@ class SpringBootEventTest {
         eventConfig.setTestConfig(TestConfig.builder().build());
         eventConfig.setActuatorBaseUrl("http://localhost:8080/actuator");
         eventConfig.setDumpPath("/tmp");
+        eventConfig.setTags("after/burner,beta");
 
         EventMessageBus messageBus = new EventMessageBusSimple();
 
@@ -57,38 +58,38 @@ class SpringBootEventTest {
 
     @Test
     void parseSettingsZero() {
-        Map<String, String> emptyMap = SpringBootEvent.parseSettings("");
-        assertEquals(0, emptyMap.size());
+        Map<String, String> settings = SpringBootEvent.parseSettings("");
+        assertEquals(0, settings.size());
     }
 
     @Test
     void parseSettingsOne() {
-        Map<String, String> emptyMap = SpringBootEvent.parseSettings("foo=bar");
-        assertEquals(1, emptyMap.size());
-        assertEquals("bar", emptyMap.get("foo"));
+        Map<String, String> settings = SpringBootEvent.parseSettings("foo=bar");
+        assertEquals(1, settings.size());
+        assertEquals("bar", settings.get("foo"));
     }
 
     @Test
     void parseSettingsTwo() {
-        Map<String, String> emptyMap = SpringBootEvent.parseSettings("foo=bar;name=perfana");
-        assertEquals(2, emptyMap.size());
-        assertEquals("bar", emptyMap.get("foo"));
-        assertEquals("perfana", emptyMap.get("name"));
+        Map<String, String> settings = SpringBootEvent.parseSettings("foo=bar;name=perfana");
+        assertEquals(2, settings.size());
+        assertEquals("bar", settings.get("foo"));
+        assertEquals("perfana", settings.get("name"));
     }
 
     @Test
     void parseSettingsNoValue() {
-        Map<String, String> emptyMap = SpringBootEvent.parseSettings("foo=bar;name");
-        assertEquals(2,emptyMap.size());
-        assertEquals("bar", emptyMap.get("foo"));
-        assertEquals("", emptyMap.get("name"));
+        Map<String, String> settings = SpringBootEvent.parseSettings("foo=bar;name");
+        assertEquals(2, settings.size());
+        assertEquals("bar", settings.get("foo"));
+        assertEquals("", settings.get("name"));
     }
 
     @Test
     void parseSettingsNoEntry() {
-        Map<String, String> emptyMap = SpringBootEvent.parseSettings("foo=bar;");
-        assertEquals(1,emptyMap.size());
-        assertEquals("bar", emptyMap.get("foo"));
+        Map<String, String> settings = SpringBootEvent.parseSettings("foo=bar;");
+        assertEquals(1, settings.size());
+        assertEquals("bar", settings.get("foo"));
     }
 
 }

@@ -9,9 +9,10 @@ into variables in an event-scheduler message. The variables in a message
 are picked up by the perfana-java-client and are sent to Perfana for the
 current test run.
 
-* `actuatorPropPrefix` prefix for the properties to send as variables
+* `tags` comma separated list of tags send along with the properties
 * `actuatorBaseUrl` the base url for the actuator endpoint, `/env` will be added
 * `actuatorEnvProperties` comma seperated list of actuator env properties to turn into variables
+* `actuatorPropPrefix` (DEPRECATED, use tags instead) prefix for the properties to send as variables
 
 Tip: check your http://application/actuator/env to see what is available.
 
@@ -20,8 +21,7 @@ Note: env needs to be enabled in actuator. Be careful though to not expose this 
 ```xml
 <eventConfig implementation="io.perfana.events.springboot.event.SpringBootEventConfig">
     <name>ActuatorEvent</name>
-    <helloInitialSleepSeconds>0</helloInitialSleepSeconds>
-    <actuatorPropPrefix>my-app</actuatorPropPrefix>
+    <tags>my-app</tags>
     <actuatorBaseUrl>http://my-app:8080/actuator</actuatorBaseUrl>
     <actuatorEnvProperties>java.runtime.version,JDK_JAVA_OPTIONS</actuatorEnvProperties>
 </eventConfig>
@@ -78,14 +78,14 @@ Use one of the Perfana maven plugins (`event-scheduler-maven-plugin`, `events-ga
                 <eventConfigs>
                     <eventConfig implementation="io.perfana.events.springboot.event.SpringBootEventConfig">
                         <name>SpringBootEventFrontend</name>
-                        <actuatorPropPrefix>optimus-prime-fe</actuatorPropPrefix>
+                        <tags>optimus-prime-fe,beta</tags>
                         <actuatorBaseUrl>http://optimus-prime-fe:8080/actuator</actuatorBaseUrl>
                         <actuatorEnvProperties>java.runtime.version,JDK_JAVA_OPTIONS,afterburner.async_core_pool_size</actuatorEnvProperties>
                         <dumpPath>/test-data/dump-files/fontend/</dumpPath>
                     </eventConfig>
                     <eventConfig implementation="io.perfana.events.springboot.event.SpringBootEventConfig">
                         <name>SpringBootEventBackend</name>
-                        <actuatorPropPrefix>optimus-prime-be</actuatorPropPrefix>
+                        <tags>optimus-prime-be,beta</tags>
                         <actuatorBaseUrl>http://optimus-prime-be:8080/actuator</actuatorBaseUrl>
                         <actuatorEnvProperties>java.runtime.version,JDK_JAVA_OPTIONS,afterburner.async_core_pool_size</actuatorEnvProperties>
                         <dumpPath>/test-data/dump-files/backend/</dumpPath>
