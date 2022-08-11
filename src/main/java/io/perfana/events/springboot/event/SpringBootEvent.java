@@ -70,7 +70,7 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
     public SpringBootEvent(SpringBootEventContext eventContext, EventMessageBus messageBus, EventLogger logger) {
         super(eventContext, messageBus, logger);
 
-        this.eventMessageBus.addReceiver(m -> logger.info("Received message: " + m));
+        this.eventMessageBus.addReceiver(m -> logger.debug("Received message: " + m));
     }
 
     @Override
@@ -83,7 +83,27 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
         logger.info("Fetching actuator values for [" + eventContext.getTestContext().getTestRunId() + "]");
 
         String pluginName = SpringBootEvent.class.getSimpleName() + "-" + eventContext.getName();
+        String tags = filterAndCombineTagsForTestRunConfigCall();
 
+        Map<String, String> configLines = createTestRunConfigLines();
+        configLines.forEach((name, value) -> sendKeyValueMessage(name, value, pluginName, tags));
+
+        List<Variable> variables = getActuatorVariables();
+        variables.forEach(v -> sendKeyValueMessage(v.getName(), v.getValue(), pluginName, tags));
+
+        this.eventMessageBus.send(EventMessage.builder().pluginName(pluginName).message("Go!").build());
+    }
+
+    private Map<String, String> createTestRunConfigLines() {
+        String prefix = "event." + eventContext.getName() + ".";
+        Map<String, String> lines = new HashMap<>();
+        lines.put(prefix + "dumpPath", eventContext.getDumpPath());
+        lines.put(prefix + "actuatorEnvProperties", String.valueOf(eventContext.getActuatorEnvProperties()));
+        lines.put(prefix + "actuatorBaseUrl", eventContext.getActuatorBaseUrl());
+        return lines;
+    }
+
+    private List<Variable> getActuatorVariables() {
         String actuatorBaseUrl = eventContext.getActuatorBaseUrl();
 
         List<Variable> variables = new ArrayList<>();
@@ -106,11 +126,7 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
                 }
             }
         }
-
-        String tags = filterAndCombineTagsForTestRunConfigCall();
-        variables.forEach(v -> sendKeyValueMessage(v.getName(), v.getValue(), pluginName, tags));
-
-        this.eventMessageBus.send(EventMessage.builder().pluginName(pluginName).message("Go!").build());
+        return variables;
     }
 
     /**
