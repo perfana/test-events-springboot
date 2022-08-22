@@ -43,7 +43,8 @@ class SpringBootEventTest {
 
         EventMessageBus messageBus = new EventMessageBusSimple();
 
-        SpringBootEvent event = new SpringBootEvent(eventConfig.toContext(), messageBus, EventLoggerStdOut.INSTANCE);
+        SpringBootEventContext eventContext = eventConfig.toContext();
+        SpringBootEvent event = new SpringBootEvent(eventContext, messageBus, EventLoggerStdOut.INSTANCE);
         event.beforeTest();
         event.keepAlive();
         event.customEvent(CustomEvent.createFromLine("PT3S|heapdump|debug=true"));
@@ -53,7 +54,22 @@ class SpringBootEventTest {
 
         // not much to assert really... just look at System.out and
         // check it does not blow with an Exception...
+        assertEquals("myEvent1", eventContext.getName());
+        assertEquals("after/burner,beta", eventContext.getTags());
 
+    }
+
+    @Test
+    @Disabled("only run with actual actuator running on http://localhost:8080/actuator")
+    void beforeTestMinimal() {
+        SpringBootEventConfig eventConfig = new SpringBootEventConfig();
+        eventConfig.setEventFactory(SpringBootEventFactory.class.getSimpleName());
+        eventConfig.setTestConfig(TestConfig.builder().build());
+
+        EventMessageBus messageBus = new EventMessageBusSimple();
+
+        SpringBootEvent event = new SpringBootEvent(eventConfig.toContext(), messageBus, EventLoggerStdOut.INSTANCE);
+        event.beforeTest();
     }
 
     @Test

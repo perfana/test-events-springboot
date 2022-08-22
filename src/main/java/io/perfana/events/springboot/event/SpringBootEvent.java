@@ -139,16 +139,18 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
         String actuatorPropPrefix = eventContext.getActuatorPropPrefix();
         String tags = eventContext.getTags();
 
-        List<String> tagsAsList = new ArrayList<>(Arrays.asList(tags.split(",")));
+        List<String> splitList = new ArrayList<>(Arrays.asList(tags.split(",")));
+        List<String> tagsAsListNoEmpties = splitList.stream().filter(s -> !s.isEmpty()).collect(Collectors.toList());
+
         // this can go as actuatorPropPrefix is removed!
-        if (!tagsAsList.contains(actuatorPropPrefix)) {
-            tagsAsList.add(actuatorPropPrefix);
+        if (!tagsAsListNoEmpties.contains(actuatorPropPrefix)) {
+            tagsAsListNoEmpties.add(actuatorPropPrefix);
         }
-        if (!tagsAsList.contains(ACTUATOR_TAG)) {
-            tagsAsList.add(ACTUATOR_TAG);
+        if (!tagsAsListNoEmpties.contains(ACTUATOR_TAG)) {
+            tagsAsListNoEmpties.add(ACTUATOR_TAG);
         }
 
-        return String.join(",", tagsAsList);
+        return String.join(",", tagsAsListNoEmpties);
     }
 
     private void sendKeyValueMessage(String key, String value, String pluginName, String tags) {

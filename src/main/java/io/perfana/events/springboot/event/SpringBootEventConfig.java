@@ -26,7 +26,7 @@ import java.util.List;
 @NotThreadSafe
 public class SpringBootEventConfig extends EventConfig {
 
-    private String tags;
+    private String tags = "";
     private String actuatorPropPrefix = "actuator";
     private String actuatorBaseUrl;
     private String actuatorEnvProperties;
