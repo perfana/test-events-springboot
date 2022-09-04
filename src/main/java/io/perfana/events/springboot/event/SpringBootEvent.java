@@ -25,6 +25,7 @@ import io.perfana.eventscheduler.api.EventLogger;
 import io.perfana.eventscheduler.api.message.EventMessage;
 import io.perfana.eventscheduler.api.message.EventMessageBus;
 import io.perfana.eventscheduler.exception.EventSchedulerRuntimeException;
+import io.perfana.eventscheduler.util.TestRunConfigUtil;
 
 import java.io.File;
 import java.lang.reflect.Type;
@@ -85,22 +86,24 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
         String pluginName = SpringBootEvent.class.getSimpleName() + "-" + eventContext.getName();
         String tags = filterAndCombineTagsForTestRunConfigCall();
 
-        Map<String, String> configLines = createTestRunConfigLines();
-        configLines.forEach((name, value) -> sendKeyValueMessage(name, value, pluginName, tags));
+        Map<String, String> keyValues = createTestRunKeyValues();
 
         List<Variable> variables = getActuatorVariables();
-        variables.forEach(v -> sendKeyValueMessage(v.getName(), v.getValue(), pluginName, tags));
+        variables.forEach(v -> keyValues.put(v.getName(), v.getValue()));
 
-        this.eventMessageBus.send(EventMessage.builder().pluginName(pluginName).message("Go!").build());
+        EventMessage message = TestRunConfigUtil.createTestRunConfigMessageKeys(pluginName, keyValues, tags);
+        eventMessageBus.send(message);
+
+        eventMessageBus.send(EventMessage.builder().pluginName(pluginName).message("Go!").build());
     }
 
-    private Map<String, String> createTestRunConfigLines() {
+    private Map<String, String> createTestRunKeyValues() {
         String prefix = "event." + eventContext.getName() + ".";
-        Map<String, String> lines = new HashMap<>();
-        lines.put(prefix + "dumpPath", eventContext.getDumpPath());
-        lines.put(prefix + "actuatorEnvProperties", String.valueOf(eventContext.getActuatorEnvProperties()));
-        lines.put(prefix + "actuatorBaseUrl", eventContext.getActuatorBaseUrl());
-        return lines;
+        Map<String, String> keyValues = new HashMap<>();
+        keyValues.put(prefix + "dumpPath", eventContext.getDumpPath());
+        keyValues.put(prefix + "actuatorEnvProperties", String.valueOf(eventContext.getActuatorEnvProperties()));
+        keyValues.put(prefix + "actuatorBaseUrl", eventContext.getActuatorBaseUrl());
+        return keyValues;
     }
 
     private List<Variable> getActuatorVariables() {
