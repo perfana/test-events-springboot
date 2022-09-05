@@ -25,6 +25,7 @@ import io.perfana.eventscheduler.api.EventLogger;
 import io.perfana.eventscheduler.api.message.EventMessage;
 import io.perfana.eventscheduler.api.message.EventMessageBus;
 import io.perfana.eventscheduler.exception.EventSchedulerRuntimeException;
+import io.perfana.eventscheduler.util.JavaArgsParser;
 import io.perfana.eventscheduler.util.TestRunConfigUtil;
 
 import java.io.File;
@@ -101,7 +102,7 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
         String prefix = "event." + eventContext.getName() + ".";
         Map<String, String> keyValues = new HashMap<>();
         keyValues.put(prefix + "dumpPath", eventContext.getDumpPath());
-        keyValues.put(prefix + "actuatorEnvProperties", String.valueOf(eventContext.getActuatorEnvProperties()));
+        keyValues.put(prefix + "actuatorEnvProperties", String.join(TestRunConfigUtil.VALUE_LIST_DELIMITER, eventContext.getActuatorEnvProperties()));
         keyValues.put(prefix + "actuatorBaseUrl", eventContext.getActuatorBaseUrl());
         return keyValues;
     }
@@ -112,14 +113,15 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
         List<Variable> variables = new ArrayList<>();
         if (actuatorBaseUrl != null) {
             actuatorClient = new ActuatorClient(actuatorBaseUrl, logger);
-            variables.addAll(actuatorClient.queryActuator(eventContext.getActuatorEnvProperties()));
+            List<Variable> actuatorKeyValues = actuatorClient.queryActuator(eventContext.getActuatorEnvProperties());
+            List<Variable> processedVariables = processJavaArgsLikeOptions(actuatorKeyValues);
+            variables.addAll(processedVariables);
             String info = actuatorClient.info();
             logger.info("Application info: " + info);
 
             if (info.contains("version")) {
                 try {
-                    Type type = new TypeToken<Map<String, Object>>() {
-                    }.getType();
+                    Type type = new TypeToken<Map<String, Object>>() {}.getType();
                     Map<String, Object> infoMap = gson.fromJson(info, type);
                     Map<String, Object> build = (Map<String, Object>) infoMap.get("build");
                     String version = (String) build.get("version");
@@ -130,6 +132,23 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
             }
         }
         return variables;
+    }
+
+     static List<Variable> processJavaArgsLikeOptions(List<Variable> actuatorKeyValues) {
+        List<Variable> clonedVariables = new ArrayList<>(actuatorKeyValues);
+
+        List<Variable> javaArgsVariables = actuatorKeyValues.stream()
+                .filter(v -> JavaArgsParser.isJavaCommandArgsProperty(v.getName())).collect(Collectors.toList());
+        clonedVariables.removeAll(javaArgsVariables);
+
+        javaArgsVariables.forEach(v -> addAllJvmArgOptions(clonedVariables, v));
+
+        return clonedVariables;
+    }
+
+    private static void addAllJvmArgOptions(List<Variable> clonedVariables, Variable v) {
+        JavaArgsParser.createJvmArgsTestConfigLines(v.getValue())
+                .forEach((k, v2) -> clonedVariables.add(new Variable(v.getName() + "." + k, v2)));
     }
 
     /**
@@ -154,20 +173,6 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
         }
 
         return String.join(",", tagsAsListNoEmpties);
-    }
-
-    private void sendKeyValueMessage(String key, String value, String pluginName, String tags) {
-
-        EventMessage.EventMessageBuilder messageBuilder = EventMessage.builder();
-
-        messageBuilder.variable("message-type", "test-run-config");
-        messageBuilder.variable("output", "key");
-        messageBuilder.variable("tags", tags);
-
-        messageBuilder.variable("key", key);
-        messageBuilder.message(value);
-
-        this.eventMessageBus.send(messageBuilder.pluginName(pluginName).build());
     }
 
     @Override

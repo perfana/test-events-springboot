@@ -15,6 +15,7 @@
  */
 package io.perfana.events.springboot.event;
 
+import io.perfana.events.springboot.actuator.Variable;
 import io.perfana.eventscheduler.EventMessageBusSimple;
 import io.perfana.eventscheduler.api.CustomEvent;
 import io.perfana.eventscheduler.api.config.TestConfig;
@@ -23,9 +24,12 @@ import io.perfana.eventscheduler.log.EventLoggerStdOut;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SpringBootEventTest {
 
@@ -106,6 +110,22 @@ class SpringBootEventTest {
         Map<String, String> settings = SpringBootEvent.parseSettings("foo=bar;");
         assertEquals(1, settings.size());
         assertEquals("bar", settings.get("foo"));
+    }
+
+    @Test
+    void parseJvmArgsVariables() {
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("JAVA_OPTS", "-Xms1g -Xmx2g"));
+        variables.add(new Variable("anything", "is-it-present"));
+
+        List<Variable> processedVariables = SpringBootEvent.processJavaArgsLikeOptions(variables);
+
+        assertEquals(3, processedVariables.size());
+        assertTrue(processedVariables.stream().anyMatch(v -> v.getName().equals("JAVA_OPTS.jvmArg.Xms")), "variable not found");
+        assertTrue(processedVariables.stream().anyMatch(v -> v.getName().equals("JAVA_OPTS.jvmArg.Xmx")), "variable not found");
+        assertEquals("1g", processedVariables.stream().filter(v -> v.getName().equals("JAVA_OPTS.jvmArg.Xms")).findFirst().get().getValue());
+        assertEquals("2g", processedVariables.stream().filter(v -> v.getName().equals("JAVA_OPTS.jvmArg.Xmx")).findFirst().get().getValue());
+        assertEquals("is-it-present", processedVariables.stream().filter(v -> v.getName().equals("anything")).findFirst().get().getValue());
     }
 
 }
