@@ -22,6 +22,7 @@ import net.jcip.annotations.NotThreadSafe;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @NotThreadSafe
 public class SpringBootEventConfig extends EventConfig {
@@ -37,7 +38,9 @@ public class SpringBootEventConfig extends EventConfig {
     }
 
     private List<String> createEnvProps() {
-        return actuatorEnvProperties == null ? Collections.emptyList() : Arrays.asList(actuatorEnvProperties.split(","));
+        return actuatorEnvProperties == null
+                ? Collections.emptyList()
+                : Arrays.stream(actuatorEnvProperties.split(",")).map(String::trim).collect(Collectors.toList());
     }
 
     @Override
