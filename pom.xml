@@ -23,7 +23,7 @@
 
     <groupId>io.perfana</groupId>
     <artifactId>test-events-springboot</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.1.0</version>
     <description>Interact with the springboot actuator pages to get info and create heapdumps or stacktraces. And more...</description>
     <packaging>jar</packaging>
 
@@ -98,7 +98,7 @@
         <dependency>
             <groupId>io.perfana</groupId>
             <artifactId>event-scheduler</artifactId>
-            <version>3.0.3-SNAPSHOT</version>
+            <version>3.0.3</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
