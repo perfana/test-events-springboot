@@ -84,17 +84,19 @@ public class SpringBootEventConfig extends EventConfig {
 
 
     /**
-     * @deprecated: use tags instead
+     * @deprecated use tags instead
+     * @return actuator prefix
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public String getActuatorPropPrefix() {
         return actuatorPropPrefix;
     }
 
     /**
-     * @deprecated: use tags instead
+     * @deprecated use tags instead
+     * @param actuatorPropPrefix actuator prefix
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public void setActuatorPropPrefix(String actuatorPropPrefix) {
         this.actuatorPropPrefix = actuatorPropPrefix;
     }

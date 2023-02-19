@@ -49,7 +49,8 @@ public class SpringBootEventContext extends EventContext {
     }
 
     /**
-     * @deprecated: use tags instead
+     * @deprecated use tags instead
+     * @return actuator prefix
      */
     @Deprecated
     public String getActuatorPropPrefix() {
