@@ -15,35 +15,112 @@
  */
 package io.perfana.events.springboot.actuator;
 
+import com.squareup.okhttp.*;
 import io.perfana.eventscheduler.log.EventLoggerStdOut;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ActuatorClientTest {
 
     @Test
-    @Disabled("only run with actual actuator running on http://localhost:8080/actuator")
-    public void testQuery() {
-        ActuatorClient actuatorClient = new ActuatorClient("http://localhost:8080/actuator", EventLoggerStdOut.INSTANCE);
+    void testQuery() throws IOException {
+
+        final OkHttpClient okHttpClient = mock(OkHttpClient.class);
+        final Call remoteCall = mock(Call.class);
+
+        final String serializedBody = loadFileFromTestResources("actuator.env.response.json");
+
+        ResponseBody body = ResponseBody.create(MediaType.parse("application/json"), serializedBody);
+
+        final Response response = new Response.Builder()
+                .request(new Request.Builder().url("http://localhost:8080/actuator/env").build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(200).message("").body(body)
+                .build();
+
+        when(remoteCall.execute()).thenReturn(response);
+        when(okHttpClient.newCall(any())).thenReturn(remoteCall);
+
+        ActuatorClient actuatorClient = new ActuatorClient("http://localhost:8080/actuator", okHttpClient, EventLoggerStdOut.INSTANCE);
 
         List<String> properties = new ArrayList<>();
         properties.add("java.runtime.version");
-        properties.add( "JDK_JAVA_OPTIONS");
+        properties.add("USER");
         properties.add("doesNotExist");
 
         List<Variable> variables = actuatorClient.queryActuator(properties);
 
         assertEquals(2, variables.size());
         assertEquals("systemProperties:java.runtime.version", variables.get(0).getName());
-        assertEquals("17.0.1+12-LTS", variables.get(0).getValue());
-        assertEquals("systemEnvironment:JDK_JAVA_OPTIONS", variables.get(1).getName());
-        assertEquals("-javaagent:/pyroscope.jar", variables.get(1).getValue());
+        assertEquals("17.0.3+7-LTS", variables.get(0).getValue());
+        assertEquals("systemEnvironment:USER", variables.get(1).getName());
+        assertEquals("pp", variables.get(1).getValue());
 
+    }
+
+    @Test
+    void testRetryNon200() throws IOException {
+
+        final OkHttpClient okHttpClient = mock(OkHttpClient.class);
+        final Call remoteCall = mock(Call.class);
+
+        ResponseBody body = ResponseBody.create(MediaType.parse("application/json"), "");
+
+        final Response response = new Response.Builder()
+                .request(new Request.Builder().url("http://localhost:8080/actuator/env").build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(503).message("Service not ready").body(body)
+                .build();
+
+        when(remoteCall.execute()).thenReturn(response);
+        when(okHttpClient.newCall(any())).thenReturn(remoteCall);
+
+        ActuatorClient actuatorClient = new ActuatorClient("http://localhost:8080/actuator", okHttpClient, EventLoggerStdOut.INSTANCE);
+
+        List<String> properties = new ArrayList<>();
+        properties.add("java.runtime.version");
+        properties.add("USER");
+        properties.add("doesNotExist");
+
+        assertTrue(actuatorClient.queryActuator(properties).isEmpty());
+
+    }
+
+    @Test
+    void testRetryTimeout() throws IOException {
+
+        final OkHttpClient okHttpClient = mock(OkHttpClient.class);
+        final Call remoteCall = mock(Call.class);
+
+        when(okHttpClient.newCall(any())).thenReturn(remoteCall);
+        when(remoteCall.execute()).thenThrow(new IOException("Timeout!"));
+
+        ActuatorClient actuatorClient = new ActuatorClient("http://localhost:8080/actuator", okHttpClient, EventLoggerStdOut.INSTANCE);
+
+        List<String> properties = new ArrayList<>();
+        properties.add("java.runtime.version");
+        properties.add("USER");
+        properties.add("doesNotExist");
+
+        assertTrue(actuatorClient.queryActuator(properties).isEmpty());
+
+    }
+
+    private String loadFileFromTestResources(String resource) throws IOException {
+        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(resource);
+        if (resourceAsStream == null) {
+            throw new IOException("Resource not found: " + resource);
+        }
+        return new String(resourceAsStream.readAllBytes());
     }
 
 }

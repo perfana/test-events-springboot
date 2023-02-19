@@ -26,7 +26,6 @@ import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,49 +35,36 @@ public class ActuatorClient {
 
     private final Gson gson = new GsonBuilder().create();
 
-    private final OkHttpClient okHttpClient = new OkHttpClient();
+    private final OkHttpClient okHttpClient;
 
     private final EventLogger logger;
 
+    private static final int retries = 2;
+    private static final List<Integer> retryCodes = List.of(408, 425 , 429, 500, 502, 503, 504);
+
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssSSS");
 
-    public ActuatorClient(String actuatorUrl, EventLogger logger) {
+    public ActuatorClient(String actuatorUrl, OkHttpClient okHttpClient, EventLogger logger) {
         this.baseUrl = actuatorUrl;
+        this.okHttpClient = okHttpClient;
         this.logger = logger;
-
-        okHttpClient.setConnectTimeout(800, TimeUnit.MILLISECONDS);
-        okHttpClient.setReadTimeout(1800, TimeUnit.MILLISECONDS);
-        okHttpClient.setWriteTimeout(1800, TimeUnit.MILLISECONDS);
     }
 
     public List<Variable> queryActuator(List<String> envKeys) {
 
         String totalUrl = baseUrl + "/env";
         try {
+            String result = remoteCall(totalUrl);
 
-            Request request = new Request.Builder()
-                .url(totalUrl)
-                .get()
-                .build();
-
-            Response response = okHttpClient.newCall(request).execute();
-
-            if (response.code() != 200) {
-                logger.error("Unexpected status code (not 200): " + response.code() + " for " + request.url() + " : " + response.body());
-                return Collections.emptyList();
-            }
-
-            String body = response.body().string();
-
-            ActuatorEnvs envs = gson.fromJson(body, ActuatorEnvs.class);
+            ActuatorEnvs envs = gson.fromJson(result, ActuatorEnvs.class);
 
             return envs.propertySources.stream()
-                .flatMap(propertySource -> filterAndPrefixProperties(propertySource.name, envKeys, propertySource.properties.entrySet()))
-                .collect(Collectors.toList());
+                    .flatMap(propertySource -> filterAndPrefixProperties(propertySource.name, envKeys, propertySource.properties.entrySet()))
+                    .collect(Collectors.toList());
 
-        } catch (IOException e) {
-           logger.error("Cannot get " + totalUrl, e);
-           return Collections.emptyList();
+        } catch (ActuatorClientException ex) {
+            logger.error("Cannot get " + totalUrl, ex);
+            return Collections.emptyList();
         }
     }
 
@@ -86,25 +72,58 @@ public class ActuatorClient {
     public String info() {
         // http://localhost:8080/actuator/info
         String totalUrl = baseUrl + "/info";
-
         try {
-            Request request = new Request.Builder()
-                .url(totalUrl)
-                .get()
-                .build();
-
-            Response response = okHttpClient.newCall(request).execute();
-
-            if (response.code() != 200) {
-                logger.error("Unexpected status code (not 200): " + response.code() + " for " + request.url() + " : " + response.body());
-                return "{}";
-            }
-            return response.body().string();
-
-    } catch (IOException e) {
-        logger.error("Cannot get " + totalUrl, e);
-        return "{}}";
+            return remoteCall(totalUrl);
+        } catch (ActuatorClientException ex) {
+            logger.error("Cannot get " + totalUrl, ex);
+            return "{}";
+        }
     }
+
+    private String remoteCall(String url) throws ActuatorClientException {
+        int count = 0;
+        while (true) {
+            count++;
+            try {
+                Request request = new Request.Builder()
+                        .url(url)
+                        .get()
+                        .build();
+
+                Response response = okHttpClient.newCall(request).execute();
+
+                int code = response.code();
+                if (code != 200) {
+                    String message = "Unexpected status code (not 200): " + code + " for " + request.url() + ": " + response.message();
+                    if (count <= retries && retryCodes.contains(code)) {
+                        logger.warn("Retry (" + count + "/" + retries + ") for call: " + message);
+                        waitForRetry();
+                        continue;
+                    }
+                    else {
+                        throw new ActuatorClientException(message);
+                    }
+                }
+                return response.body().string();
+            } catch (IOException e) {
+                String message = "Cannot get " + url;
+                if (count <= retries) {
+                    logger.warn("Retry (" + count + "/" + retries + ") for call: " + message + " cause: " + e.getMessage());
+                    waitForRetry();
+                }
+                else {
+                    throw new ActuatorClientException(message, e);
+                }
+            }
+        }
+    }
+
+    private void waitForRetry() {
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     public void heapdump(File path, String fileId) {
@@ -146,7 +165,6 @@ public class ActuatorClient {
             logger.error("Create heap dump and save heap dump failed.", e);
         }
     }
-
 
     private Stream<Variable> filterAndPrefixProperties(String prefix, List<String> propertyNames, Set<Map.Entry<String, Value>> propertiesSet) {
         return propertiesSet.stream()

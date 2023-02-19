@@ -18,6 +18,7 @@ package io.perfana.events.springboot.event;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import io.perfana.events.springboot.actuator.ActuatorClient;
+import io.perfana.events.springboot.actuator.OkHttpClientFactory;
 import io.perfana.events.springboot.actuator.Variable;
 import io.perfana.eventscheduler.api.CustomEvent;
 import io.perfana.eventscheduler.api.EventAdapter;
@@ -112,7 +113,7 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
 
         List<Variable> variables = new ArrayList<>();
         if (actuatorBaseUrl != null) {
-            actuatorClient = new ActuatorClient(actuatorBaseUrl, logger);
+            actuatorClient = new ActuatorClient(actuatorBaseUrl, OkHttpClientFactory.instance(), logger);
             List<Variable> actuatorKeyValues = actuatorClient.queryActuator(eventContext.getActuatorEnvProperties());
             List<Variable> processedVariables = processJavaArgsLikeOptions(actuatorKeyValues);
             variables.addAll(processedVariables);
