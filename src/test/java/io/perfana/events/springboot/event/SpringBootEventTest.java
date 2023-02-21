@@ -21,21 +21,21 @@ import io.perfana.eventscheduler.api.CustomEvent;
 import io.perfana.eventscheduler.api.config.TestConfig;
 import io.perfana.eventscheduler.api.message.EventMessageBus;
 import io.perfana.eventscheduler.log.EventLoggerStdOut;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static io.perfana.events.springboot.TestUtil.createOkHttpClientMock200;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SpringBootEventTest {
 
     @Test
-    @Disabled("only run with actual actuator running on http://localhost:8080/actuator")
-    void beforeTest() {
+    void beforeTest() throws IOException {
         SpringBootEventConfig eventConfig = new SpringBootEventConfig();
         eventConfig.setEventFactory(SpringBootEventFactory.class.getSimpleName());
         eventConfig.setName("myEvent1");
@@ -44,11 +44,15 @@ class SpringBootEventTest {
         eventConfig.setActuatorBaseUrl("http://localhost:8080/actuator");
         eventConfig.setDumpPath("/tmp");
         eventConfig.setTags("after/burner,beta");
+        eventConfig.setActuatorEnvProperties("afterburner.remote.call.httpclient.connect.timeout.millis,afterburner.remote.call.httpclient.connections.max");
 
         EventMessageBus messageBus = new EventMessageBusSimple();
 
         SpringBootEventContext eventContext = eventConfig.toContext();
-        SpringBootEvent event = new SpringBootEvent(eventContext, messageBus, EventLoggerStdOut.INSTANCE);
+        SpringBootEvent event = new SpringBootEvent(eventContext, messageBus, EventLoggerStdOut.INSTANCE_DEBUG);
+
+        event.injectOkHttpClient(createOkHttpClientMock200());
+
         event.beforeTest();
         event.keepAlive();
         event.customEvent(CustomEvent.createFromLine("PT3S|heapdump|debug=true"));
@@ -64,8 +68,7 @@ class SpringBootEventTest {
     }
 
     @Test
-    @Disabled("only run with actual actuator running on http://localhost:8080/actuator")
-    void beforeTestMinimal() {
+    void beforeTestMinimal() throws IOException {
         SpringBootEventConfig eventConfig = new SpringBootEventConfig();
         eventConfig.setEventFactory(SpringBootEventFactory.class.getSimpleName());
         eventConfig.setTestConfig(TestConfig.builder().build());
@@ -73,6 +76,7 @@ class SpringBootEventTest {
         EventMessageBus messageBus = new EventMessageBusSimple();
 
         SpringBootEvent event = new SpringBootEvent(eventConfig.toContext(), messageBus, EventLoggerStdOut.INSTANCE);
+        event.injectOkHttpClient(createOkHttpClientMock200());
         event.beforeTest();
     }
 

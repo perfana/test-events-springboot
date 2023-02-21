@@ -16,11 +16,11 @@
 package io.perfana.events.springboot.actuator;
 
 import com.squareup.okhttp.*;
+import io.perfana.events.springboot.TestUtil;
 import io.perfana.eventscheduler.log.EventLoggerStdOut;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,21 +34,7 @@ class ActuatorClientTest {
     @Test
     void testQuery() throws IOException {
 
-        final OkHttpClient okHttpClient = mock(OkHttpClient.class);
-        final Call remoteCall = mock(Call.class);
-
-        final String serializedBody = loadFileFromTestResources("actuator.env.response.json");
-
-        ResponseBody body = ResponseBody.create(MediaType.parse("application/json"), serializedBody);
-
-        final Response response = new Response.Builder()
-                .request(new Request.Builder().url("http://localhost:8080/actuator/env").build())
-                .protocol(Protocol.HTTP_1_1)
-                .code(200).message("").body(body)
-                .build();
-
-        when(remoteCall.execute()).thenReturn(response);
-        when(okHttpClient.newCall(any())).thenReturn(remoteCall);
+        final OkHttpClient okHttpClient = TestUtil.createOkHttpClientMock200();
 
         ActuatorClient actuatorClient = new ActuatorClient("http://localhost:8080/actuator", okHttpClient, EventLoggerStdOut.INSTANCE);
 
@@ -70,19 +56,7 @@ class ActuatorClientTest {
     @Test
     void testRetryNon200() throws IOException {
 
-        final OkHttpClient okHttpClient = mock(OkHttpClient.class);
-        final Call remoteCall = mock(Call.class);
-
-        ResponseBody body = ResponseBody.create(MediaType.parse("application/json"), "");
-
-        final Response response = new Response.Builder()
-                .request(new Request.Builder().url("http://localhost:8080/actuator/env").build())
-                .protocol(Protocol.HTTP_1_1)
-                .code(503).message("Service not ready").body(body)
-                .build();
-
-        when(remoteCall.execute()).thenReturn(response);
-        when(okHttpClient.newCall(any())).thenReturn(remoteCall);
+        final OkHttpClient okHttpClient = TestUtil.createOkHttpClientMock503();
 
         ActuatorClient actuatorClient = new ActuatorClient("http://localhost:8080/actuator", okHttpClient, EventLoggerStdOut.INSTANCE);
 
@@ -113,14 +87,6 @@ class ActuatorClientTest {
 
         assertTrue(actuatorClient.queryActuator(properties).isEmpty());
 
-    }
-
-    private String loadFileFromTestResources(String resource) throws IOException {
-        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(resource);
-        if (resourceAsStream == null) {
-            throw new IOException("Resource not found: " + resource);
-        }
-        return new String(resourceAsStream.readAllBytes());
     }
 
 }

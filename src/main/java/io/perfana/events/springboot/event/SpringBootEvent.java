@@ -17,6 +17,7 @@ package io.perfana.events.springboot.event;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.squareup.okhttp.OkHttpClient;
 import io.perfana.events.springboot.actuator.ActuatorClient;
 import io.perfana.events.springboot.actuator.OkHttpClientFactory;
 import io.perfana.events.springboot.actuator.Variable;
@@ -44,6 +45,8 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
 
     private final Gson gson = new Gson();
 
+    private OkHttpClient okHttpClient = OkHttpClientFactory.instance();
+
     enum AllowedCustomEvents {
         heapdump("heapdump"), threaddump("threaddump");
 
@@ -69,6 +72,12 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
     private final Set<String> allowedCustomEvents = setOf(AllowedCustomEvents.stream()
         .map(AllowedCustomEvents::getEventName)
         .toArray(String[]::new));
+
+
+    // for test only
+    void injectOkHttpClient(OkHttpClient okHttpClient) {
+        this.okHttpClient = okHttpClient;
+    }
 
     public SpringBootEvent(SpringBootEventContext eventContext, EventMessageBus messageBus, EventLogger logger) {
         super(eventContext, messageBus, logger);
@@ -113,12 +122,15 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
 
         List<Variable> variables = new ArrayList<>();
         if (actuatorBaseUrl != null) {
-            actuatorClient = new ActuatorClient(actuatorBaseUrl, OkHttpClientFactory.instance(), logger);
-            List<Variable> actuatorKeyValues = actuatorClient.queryActuator(eventContext.getActuatorEnvProperties());
+            actuatorClient = new ActuatorClient(actuatorBaseUrl, okHttpClient, logger);
+            List<String> actuatorEnvProperties = eventContext.getActuatorEnvProperties();
+            logger.debug("Requested actuatorEnvProperties: " + actuatorEnvProperties);
+            List<Variable> actuatorKeyValues = actuatorClient.queryActuator(actuatorEnvProperties);
+            logger.debug("Found actuator values: " + actuatorKeyValues);
             List<Variable> processedVariables = processJavaArgsLikeOptions(actuatorKeyValues);
             variables.addAll(processedVariables);
             String info = actuatorClient.info();
-            logger.info("Application info: " + info);
+            logger.debug("Application info: " + info);
 
             if (info.contains("version")) {
                 try {
@@ -132,6 +144,7 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
                 }
             }
         }
+        logger.debug("All processed actuator values: " + variables);
         return variables;
     }
 

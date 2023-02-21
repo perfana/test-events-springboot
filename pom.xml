@@ -23,7 +23,7 @@
 
     <groupId>io.perfana</groupId>
     <artifactId>test-events-springboot</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
     <description>Interact with the springboot actuator pages to get info and create heapdumps or stacktraces. And more...</description>
     <packaging>jar</packaging>
 
