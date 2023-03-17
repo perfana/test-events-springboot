@@ -40,7 +40,6 @@ class SpringBootEventTest {
         eventConfig.setEventFactory(SpringBootEventFactory.class.getSimpleName());
         eventConfig.setName("myEvent1");
         eventConfig.setEnabled(true);
-        eventConfig.setTestConfig(TestConfig.builder().build());
         eventConfig.setActuatorBaseUrl("http://localhost:8080/actuator");
         eventConfig.setDumpPath("/tmp");
         eventConfig.setTags("after/burner,beta");
@@ -49,7 +48,7 @@ class SpringBootEventTest {
         EventMessageBus messageBus = new EventMessageBusSimple();
 
         SpringBootEventContext eventContext = eventConfig.toContext();
-        SpringBootEvent event = new SpringBootEvent(eventContext, messageBus, EventLoggerStdOut.INSTANCE_DEBUG);
+        SpringBootEvent event = new SpringBootEvent(eventContext, TestConfig.builder().build().toContext(), messageBus, EventLoggerStdOut.INSTANCE_DEBUG);
 
         event.injectOkHttpClient(createOkHttpClientMock200());
 
@@ -71,11 +70,10 @@ class SpringBootEventTest {
     void beforeTestMinimal() throws IOException {
         SpringBootEventConfig eventConfig = new SpringBootEventConfig();
         eventConfig.setEventFactory(SpringBootEventFactory.class.getSimpleName());
-        eventConfig.setTestConfig(TestConfig.builder().build());
 
         EventMessageBus messageBus = new EventMessageBusSimple();
 
-        SpringBootEvent event = new SpringBootEvent(eventConfig.toContext(), messageBus, EventLoggerStdOut.INSTANCE);
+        SpringBootEvent event = new SpringBootEvent(eventConfig.toContext(), TestConfig.builder().build().toContext(), messageBus, EventLoggerStdOut.INSTANCE);
         event.injectOkHttpClient(createOkHttpClientMock200());
         event.beforeTest();
     }

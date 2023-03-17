@@ -18,12 +18,13 @@ package io.perfana.events.springboot.event;
 import io.perfana.eventscheduler.api.Event;
 import io.perfana.eventscheduler.api.EventFactory;
 import io.perfana.eventscheduler.api.EventLogger;
+import io.perfana.eventscheduler.api.config.TestContext;
 import io.perfana.eventscheduler.api.message.EventMessageBus;
 
 public class SpringBootEventFactory implements EventFactory<SpringBootEventContext> {
 
     @Override
-    public Event create(SpringBootEventContext context, EventMessageBus messageBus, EventLogger eventLogger) {
-        return new SpringBootEvent(context, messageBus, eventLogger);
+    public Event create(SpringBootEventContext context, TestContext testContext, EventMessageBus messageBus, EventLogger eventLogger) {
+        return new SpringBootEvent(context, testContext, messageBus, eventLogger);
     }
 }

@@ -16,7 +16,6 @@
 package io.perfana.events.springboot.event;
 
 import io.perfana.eventscheduler.api.config.EventConfig;
-import io.perfana.eventscheduler.api.config.TestContext;
 import net.jcip.annotations.NotThreadSafe;
 
 import java.util.Arrays;
@@ -46,14 +45,9 @@ public class SpringBootEventConfig extends EventConfig {
     @Override
     public SpringBootEventContext toContext() {
         List<String> envProps = createEnvProps();
-        return new SpringBootEventContext(super.toContext(), tags, actuatorPropPrefix, actuatorBaseUrl, envProps, dumpPath);
+        return new SpringBootEventContext(super.toContext(),  tags, actuatorPropPrefix, actuatorBaseUrl, envProps, dumpPath);
     }
 
-    @Override
-    public SpringBootEventContext toContext(TestContext override) {
-        List<String> envProps = createEnvProps();
-        return new SpringBootEventContext(super.toContext(override), tags, actuatorPropPrefix, actuatorBaseUrl, envProps, dumpPath);
-    }
 
     @Override
     public String toString() {

@@ -24,6 +24,7 @@ import io.perfana.events.springboot.actuator.Variable;
 import io.perfana.eventscheduler.api.CustomEvent;
 import io.perfana.eventscheduler.api.EventAdapter;
 import io.perfana.eventscheduler.api.EventLogger;
+import io.perfana.eventscheduler.api.config.TestContext;
 import io.perfana.eventscheduler.api.message.EventMessage;
 import io.perfana.eventscheduler.api.message.EventMessageBus;
 import io.perfana.eventscheduler.exception.EventSchedulerRuntimeException;
@@ -79,8 +80,8 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
         this.okHttpClient = okHttpClient;
     }
 
-    public SpringBootEvent(SpringBootEventContext eventContext, EventMessageBus messageBus, EventLogger logger) {
-        super(eventContext, messageBus, logger);
+    public SpringBootEvent(SpringBootEventContext eventContext, TestContext testContext, EventMessageBus messageBus, EventLogger logger) {
+        super(eventContext, testContext, messageBus, logger);
 
         this.eventMessageBus.addReceiver(m -> logger.debug("Received message: " + m));
     }
@@ -92,7 +93,7 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
 
     @Override
     public void beforeTest() {
-        logger.info("Fetching actuator values for [" + eventContext.getTestContext().getTestRunId() + "]");
+        logger.info("Fetching actuator values for [" + testContext.getTestRunId() + "]");
 
         String pluginName = SpringBootEvent.class.getSimpleName() + "-" + eventContext.getName();
         String tags = filterAndCombineTagsForTestRunConfigCall();
@@ -214,7 +215,7 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
     }
 
     private String uniqueFileNameFromTags() {
-        String testRunId = eventContext.getTestContext().getTestRunId();
+        String testRunId = testContext.getTestRunId();
         String tags = eventContext.getTags();
         if (tags.isEmpty()) {
             return testRunId;
