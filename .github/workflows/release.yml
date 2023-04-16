@@ -1,6 +1,9 @@
 name: Release
 
 on:
+  push:
+    tags:
+      - '*'
   workflow_dispatch:
 
 defaults:
@@ -42,4 +45,11 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_SIGNING_PASSWORD }}
         run: |
-          mvn --batch-mode clean deploy
+          ./mvnw --batch-mode clean deploy
+
+      - name: Create GHA release
+        uses: ncipollo/release-action@v1
+        if: contains(env.TAG_NAME, 'SNAPSHOT') != true
+        with:
+          artifacts: "target/*.jar"
+          bodyFile: RELEASE.md
