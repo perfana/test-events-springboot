@@ -106,7 +106,9 @@ public class SpringBootEvent extends EventAdapter<SpringBootEventContext> {
         EventMessage message = TestRunConfigUtil.createTestRunConfigMessageKeys(pluginName, keyValues, tags);
         eventMessageBus.send(message);
 
-        eventMessageBus.send(EventMessage.builder().pluginName(pluginName).message("Go!").build());
+        if (eventContext.isReadyForStartParticipant()) {
+            eventMessageBus.send(EventMessage.builder().pluginName(pluginName).message("Go!").build());
+        }
     }
 
     private Map<String, String> createTestRunKeyValues() {
